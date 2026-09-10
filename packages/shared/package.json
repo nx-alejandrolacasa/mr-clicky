@@ -1,0 +1,17 @@
+{
+  "name": "@mr-clicky/shared",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Browser-agnostic rule storage, URL matching, element picker, content script, background and popup UI shared between Firefox and Chrome.",
+  "type": "module",
+  "exports": {
+    "./rules": "./src/rules.ts",
+    "./settings": "./src/settings.ts",
+    "./selector": "./src/selector.ts",
+    "./picker": "./src/picker.ts",
+    "./content": "./src/content.ts",
+    "./background": "./src/background.ts",
+    "./popup": "./src/popup.ts"
+  }
+}

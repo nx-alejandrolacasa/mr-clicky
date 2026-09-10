@@ -1,0 +1,19 @@
+{
+  "name": "@mr-clicky/firefox",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Firefox extension that automatically clicks a configured element on pages whose URL matches a rule.",
+  "scripts": {
+    "build": "tsx build.ts",
+    "dev": "tsx build.ts && (tsx build.ts --watch & web-ext run --source-dir=dist)",
+    "lint": "web-ext lint --source-dir=dist",
+    "package": "web-ext build"
+  },
+  "dependencies": {
+    "@mr-clicky/shared": "*"
+  },
+  "devDependencies": {
+    "web-ext": "^10.1.0"
+  }
+}

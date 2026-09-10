@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mr. Clicky</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <h1 data-i18n="popupTitle">Mr. Clicky</h1>
+      <form id="add-form" autocomplete="off">
+        <label class="field">
+          <span data-i18n="patternLabel">URL pattern (regular expression)</span>
+          <input
+            id="pattern-input"
+            type="text"
+            spellcheck="false"
+            data-i18n-placeholder="patternPlaceholder"
+            required
+          />
+        </label>
+        <label class="field">
+          <span data-i18n="selectorLabel">Button selector</span>
+          <div class="selector-row">
+            <input
+              id="selector-input"
+              type="text"
+              spellcheck="false"
+              data-i18n-placeholder="selectorPlaceholder"
+              required
+            />
+            <button
+              type="button"
+              id="pick-button"
+              class="secondary"
+              data-i18n="pickElement"
+              data-i18n-title="pickElementTitle"
+            >
+              Pick
+            </button>
+          </div>
+        </label>
+        <p id="form-error" class="error" role="alert" hidden></p>
+        <button type="submit" class="primary" data-i18n="addRule">Add</button>
+      </form>
+      <p class="hint" data-i18n="patternHint">
+        The pattern is matched against the full URL. Each rule clicks once per page.
+      </p>
+      <label class="setting">
+        <span data-i18n="delayLabel">Click delay (ms)</span>
+        <input id="delay-input" type="number" inputmode="numeric" step="50" />
+      </label>
+      <ul id="rule-list"></ul>
+      <p id="empty-state" data-i18n="emptyState" hidden>
+        No rules yet. Add a URL pattern and a selector above.
+      </p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "extName": { "message": "Mr. Clicky" },
+  "extDescription": { "message": "Automatically click a button on pages you choose: a URL pattern plus a CSS selector, and the click happens for you." },
+  "popupTitle": { "message": "Mr. Clicky" },
+  "patternLabel": { "message": "URL pattern (regular expression)" },
+  "patternPlaceholder": { "message": "id\\.atlassian\\.com/login" },
+  "selectorLabel": { "message": "Button selector" },
+  "selectorPlaceholder": { "message": "button[type=\"submit\"]" },
+  "pickElement": { "message": "Pick" },
+  "pickElementTitle": { "message": "Pick an element on the page" },
+  "addRule": { "message": "Add" },
+  "deleteRule": { "message": "Delete rule" },
+  "patternHint": { "message": "The pattern is matched against the full URL. Each rule clicks once per page." },
+  "delayLabel": { "message": "Click delay (ms)" },
+  "emptyState": { "message": "No rules yet. Add a URL pattern and a selector above." },
+  "invalidPattern": { "message": "That pattern is not a valid regular expression." },
+  "invalidSelector": { "message": "That selector is not valid CSS." },
+  "pickUnavailable": { "message": "Open a regular web page to pick an element (reload it if it was open before the extension was installed)." }
+}
