@@ -1,33 +1,35 @@
-// Rasterize the extension icon (same design as assets/icons/icon.svg) to a
-// 128×128 PNG for Chrome, which doesn't accept SVG manifest icons. Pure
-// Node, no dependencies: signed-distance fields for the three shapes and a
-// minimal PNG encoder. The Chrome build calls it, so no binary is committed.
+// Rasterize the extension icon (same design as assets/icons/icon.svg) and
+// the background-free toolbar glyph (assets/icons/toolbar-*.svg) to PNGs for
+// Chrome, which doesn't accept SVG manifest icons. Pure Node, no
+// dependencies: signed-distance fields for the shapes and a minimal PNG
+// encoder. The Chrome build calls it, so no binary is committed.
 import { deflateSync } from "node:zlib";
 
 const SIZE = 128;
 
-const GRAD_A = [74, 90, 200]; // #4a5ac8
-const GRAD_B = [124, 77, 255]; // #7c4dff
+const BACKGROUND = [0, 0, 0];
 const PAPER = [255, 255, 255];
-const INK = [28, 28, 46]; // #1c1c2e
+export const TOOLBAR_DARK = [0x1f, 0x23, 0x28];
+export const TOOLBAR_LIGHT = [255, 255, 255];
+// The glyph's bounding square, the toolbar SVGs' viewBox.
+const TOOLBAR_ORIGIN = 22;
+const TOOLBAR_SPAN = 84;
 
-// The cursor arrow, as in icon.svg; its tip sits on the button.
-const ARROW: readonly (readonly [number, number])[] = [
-  [64.4, 53.2],
-  [64.4, 100],
-  [77.4, 88.3],
-  [86.5, 105.5],
-  [94.3, 101.6],
-  [85.2, 84.4],
-  [102.1, 84.4],
+type Point = readonly [number, number];
+// The iPadOS-style pointer: a tailless arrow whose corners are rounded by
+// dilating the polygon by POINTER_ROUND, like the stroke in icon.svg.
+const POINTER: readonly Point[] = [
+  [39, 30],
+  [39, 98],
+  [60, 80],
+  [89, 80],
 ];
-const ARROW_OUTLINE = 2.5;
+const POINTER_ROUND = 6;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 const coverage = (distance: number) => clamp01(0.5 - distance);
-const blend = (rgb: number[], over: number[], t: number) =>
-  rgb.map((c, i) => mix(c, over[i] ?? c, t));
+const blend = (rgb: number[], over: number[], t: number) => rgb.map((c, i) => mix(c, over[i] ?? c, t));
 
 function roundedRectSDF(
   x: number,
@@ -40,12 +42,10 @@ function roundedRectSDF(
 ): number {
   const dx = Math.abs(x - cx) - (halfWidth - radius);
   const dy = Math.abs(y - cy) - (halfHeight - radius);
-  return (
-    Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0) - radius
-  );
+  return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0) - radius;
 }
 
-function polygonSDF(px: number, py: number, vertices: typeof ARROW): number {
+function polygonSDF(px: number, py: number, vertices: readonly Point[]): number {
   const first = vertices[0];
   if (!first) return Infinity;
   let d = (px - first[0]) ** 2 + (py - first[1]) ** 2;
@@ -70,20 +70,17 @@ function polygonSDF(px: number, py: number, vertices: typeof ARROW): number {
   return sign * Math.sqrt(d);
 }
 
+function glyphSDF(x: number, y: number): number {
+  return polygonSDF(x, y, POINTER) - POINTER_ROUND;
+}
+
 function pixel(x: number, y: number): number[] {
   const cx = x + 0.5;
   const cy = y + 0.5;
   const shape = coverage(roundedRectSDF(cx, cy, SIZE / 2, SIZE / 2, SIZE / 2, SIZE / 2, 28));
   if (shape === 0) return [0, 0, 0, 0];
 
-  const t = (x + y) / (2 * (SIZE - 1));
-  let rgb = GRAD_A.map((a, i) => mix(a, GRAD_B[i] ?? a, t));
-
-  rgb = blend(rgb, PAPER, coverage(roundedRectSDF(cx, cy, 64, 60, 44, 18, 18)));
-
-  const arrow = polygonSDF(cx, cy, ARROW);
-  rgb = blend(rgb, PAPER, coverage(arrow - ARROW_OUTLINE));
-  rgb = blend(rgb, INK, coverage(arrow));
+  const rgb = blend(BACKGROUND, PAPER, coverage(glyphSDF(cx, cy)));
 
   return [...rgb.map(Math.round), Math.round(shape * 255)];
 }
@@ -111,18 +108,30 @@ function chunk(type: string, data: Buffer): Buffer {
 }
 
 export function renderIconPng(): Buffer {
-  const raw = Buffer.alloc(SIZE * (SIZE * 4 + 1));
-  for (let y = 0; y < SIZE; y++) {
-    const row = y * (SIZE * 4 + 1);
+  return encodePng(SIZE, pixel);
+}
+
+export function renderToolbarPng(size: number, color: readonly number[]): Buffer {
+  const scale = TOOLBAR_SPAN / size;
+  return encodePng(size, (x, y) => {
+    const distance = glyphSDF(TOOLBAR_ORIGIN + (x + 0.5) * scale, TOOLBAR_ORIGIN + (y + 0.5) * scale);
+    return [...color, Math.round(coverage(distance / scale) * 255)];
+  });
+}
+
+function encodePng(size: number, pixelAt: (x: number, y: number) => number[]): Buffer {
+  const raw = Buffer.alloc(size * (size * 4 + 1));
+  for (let y = 0; y < size; y++) {
+    const row = y * (size * 4 + 1);
     raw[row] = 0; // filter: none
-    for (let x = 0; x < SIZE; x++) {
-      raw.set(pixel(x, y), row + 1 + x * 4);
+    for (let x = 0; x < size; x++) {
+      raw.set(pixelAt(x, y), row + 1 + x * 4);
     }
   }
 
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(SIZE, 0);
-  ihdr.writeUInt32BE(SIZE, 4);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
   ihdr.set([8, 6, 0, 0, 0], 8); // 8-bit RGBA
 
   return Buffer.concat([
